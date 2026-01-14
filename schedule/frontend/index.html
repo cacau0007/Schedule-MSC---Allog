@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALLOG - MSC Schedules</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f7fa; min-height: 100vh; }
+        
+        header { background: linear-gradient(135deg, #1a1a1a 0%, #333 100%); padding: 15px 30px; display: flex; align-items: center; gap: 20px; }
+        .logo { display: flex; align-items: baseline; }
+        .logo .a { font-size: 28px; font-weight: 900; color: #00a0b0; font-style: italic; }
+        .logo .llog { font-size: 26px; font-weight: 900; color: #fff; }
+        .logo .group { font-size: 11px; color: #00a0b0; margin-left: 4px; font-weight: 600; }
+        header h1 { color: #ffd700; font-size: 1.1rem; font-weight: 600; }
+        .msc-badge { background: #ffd700; color: #000; padding: 5px 15px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; margin-left: auto; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 25px; }
+        
+        .search-card { background: #fff; border-radius: 10px; padding: 25px; box-shadow: 0 2px 15px rgba(0,0,0,0.08); margin-bottom: 20px; border-top: 4px solid #ffd700; }
+        .search-card h2 { color: #333; font-size: 1.1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        
+        .search-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 0.75rem; font-weight: 600; color: #666; text-transform: uppercase; }
+        .form-group select { padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.95rem; transition: border-color 0.2s; }
+        .form-group select:focus { outline: none; border-color: #ffd700; }
+        .form-group select:disabled { background: #f5f5f5; color: #999; }
+        
+        .btn { padding: 12px 25px; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-search { background: #ffd700; color: #000; }
+        .btn-search:hover { background: #e6c200; }
+        .btn-search:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-export { background: #333; color: #fff; margin-left: 10px; }
+        .btn-export:hover { background: #555; }
+        .btn-export:disabled { opacity: 0.3; }
+        
+        .services-row { display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; flex-wrap: wrap; align-items: center; }
+        .services-row label { font-size: 0.75rem; font-weight: 600; color: #666; text-transform: uppercase; margin-right: 10px; }
+        .service-chip { padding: 8px 16px; border: 2px solid #e0e0e0; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; background: #fff; }
+        .service-chip:hover { border-color: #ffd700; }
+        .service-chip.active { background: #ffd700; border-color: #ffd700; font-weight: 600; }
+        .service-chip.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+        .service-chip.hidden { display: none; }
+        
+        .route-info { font-size: 0.75rem; color: #666; margin-left: auto; padding: 5px 10px; background: #f0f0f0; border-radius: 4px; }
+        .route-info.warning { background: #fff3cd; color: #856404; }
+        
+        .results-card { background: #fff; border-radius: 10px; padding: 25px; box-shadow: 0 2px 15px rgba(0,0,0,0.08); }
+        .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .results-header h2 { color: #333; font-size: 1.1rem; }
+        .count-badge { background: #ffd700; color: #000; padding: 5px 15px; border-radius: 15px; font-weight: 700; }
+        
+        .loading { text-align: center; padding: 50px; display: none; }
+        .loading.show { display: block; }
+        .spinner { width: 50px; height: 50px; border: 4px solid #e0e0e0; border-top-color: #ffd700; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #666; }
+        .loading .sub { font-size: 0.8rem; color: #999; margin-top: 5px; }
+        
+        .empty { text-align: center; padding: 50px; color: #999; }
+        .empty .icon { font-size: 4rem; margin-bottom: 15px; }
+        
+        .msg { padding: 12px 16px; border-radius: 6px; margin-bottom: 15px; display: none; font-size: 0.9rem; }
+        .msg-error { background: #ffebee; color: #c62828; border-left: 4px solid #c62828; }
+        .msg-success { background: #e8f5e9; color: #2e7d32; border-left: 4px solid #2e7d32; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        thead { background: #1a1a1a; color: #fff; }
+        th { padding: 12px 10px; text-align: left; font-size: 0.75rem; text-transform: uppercase; }
+        tbody tr { border-bottom: 1px solid #f0f0f0; transition: background 0.2s; }
+        tbody tr:hover { background: #fffde7; }
+        td { padding: 12px 10px; font-size: 0.9rem; }
+        
+        .service-tag { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+        .service-santana { background: #e3f2fd; color: #1565c0; }
+        .service-carioca { background: #fce4ec; color: #c2185b; }
+        .service-ipanema { background: #e8f5e9; color: #2e7d32; }
+        .service-jade { background: #fff3e0; color: #e65100; }
+        .service-tiger { background: #f3e5f5; color: #7b1fa2; }
+        .service-dragon { background: #ffebee; color: #c62828; }
+        .service-lion { background: #e0f2f1; color: #00695c; }
+        .service-phoenix { background: #fbe9e7; color: #bf360c; }
+        .service-seagull { background: #e1f5fe; color: #0277bd; }
+        .service-seahorse { background: #f1f8e9; color: #558b2f; }
+        .service-pertiwi { background: #fff8e1; color: #ff8f00; }
+        .service-dolphin { background: #e0f7fa; color: #00838f; }
+        .service-kaguya { background: #fce4ec; color: #ad1457; }
+        
+        .screenshots { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; }
+        .screenshots h4 { font-size: 0.8rem; color: #666; margin-bottom: 10px; }
+        .screenshot-links { display: flex; flex-wrap: wrap; gap: 8px; }
+        .screenshot-link { padding: 4px 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; color: #333; text-decoration: none; font-size: 0.7rem; }
+        .screenshot-link:hover { background: #ffd700; border-color: #ffd700; }
+        
+        @media (max-width: 800px) {
+            .search-grid { grid-template-columns: 1fr; }
+            .services-row { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <span class="a">A</span>
+            <span class="llog">LLOG</span>
+            <span class="group">GROUP</span>
+        </div>
+        <h1>Sistema de Schedules</h1>
+        <span class="msc-badge">🚢 MSC</span>
+    </header>
+    
+    <div class="container">
+        <div class="search-card">
+            <h2>🔍 Buscar Schedules MSC</h2>
+            
+            <form id="searchForm">
+                <div class="search-grid">
+                    <div class="form-group">
+                        <label>Porto de Origem (POL)</label>
+                        <select id="pol" required>
+                            <option value="">Selecione...</option>
+                            <optgroup label="🇨🇳 China - Principal">
+                                <option value="Shanghai">Shanghai</option>
+                                <option value="Ningbo">Ningbo</option>
+                                <option value="Qingdao">Qingdao</option>
+                                <option value="Yantian">Yantian</option>
+                                <option value="Xiamen">Xiamen</option>
+                                <option value="Shekou">Shekou</option>
+                                <option value="Hong Kong">Hong Kong</option>
+                            </optgroup>
+                            <optgroup label="🇨🇳 China - Secundário">
+                                <option value="Tianjin">Tianjin</option>
+                                <option value="Dalian">Dalian</option>
+                                <option value="Xingang">Xingang</option>
+                                <option value="Nansha">Nansha</option>
+                                <option value="Fuzhou">Fuzhou</option>
+                                <option value="Lianyungang">Lianyungang</option>
+                                <option value="Taicang">Taicang</option>
+                                <option value="Qinzhou">Qinzhou</option>
+                                <option value="Zhanjiang">Zhanjiang</option>
+                            </optgroup>
+                            <optgroup label="🇰🇷🇹🇼 Coreia / Taiwan">
+                                <option value="Busan">Busan (Coreia)</option>
+                                <option value="Kaohsiung">Kaohsiung (Taiwan)</option>
+                            </optgroup>
+                            <optgroup label="🌏 Sudeste Asiático">
+                                <option value="Singapore">Singapore</option>
+                                <option value="Jakarta">Jakarta</option>
+                                <option value="Surabaya">Surabaya</option>
+                                <option value="Port Klang">Port Klang</option>
+                                <option value="Tanjung Pelepas">Tanjung Pelepas</option>
+                                <option value="Ho Chi Minh">Ho Chi Minh</option>
+                                <option value="Haiphong">Haiphong</option>
+                                <option value="Laem Chabang">Laem Chabang</option>
+                            </optgroup>
+                            <optgroup label="🇮🇳🇱🇰 Índia / Sri Lanka">
+                                <option value="Nhava Sheva">Nhava Sheva</option>
+                                <option value="Mundra">Mundra</option>
+                                <option value="Chennai">Chennai</option>
+                                <option value="Colombo">Colombo</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Porto de Destino (POD)</label>
+                        <select id="pod" required>
+                            <option value="">Selecione...</option>
+                            <optgroup label="🇧🇷 Brasil - Sul">
+                                <option value="Navegantes">Navegantes</option>
+                                <option value="Itajai">Itajaí</option>
+                                <option value="Itapoa">Itapoá</option>
+                                <option value="Imbituba">Imbituba</option>
+                                <option value="Paranagua">Paranaguá</option>
+                                <option value="Rio Grande">Rio Grande</option>
+                            </optgroup>
+                            <optgroup label="🇧🇷 Brasil - Sudeste">
+                                <option value="Santos">Santos</option>
+                                <option value="Rio de Janeiro">Rio de Janeiro</option>
+                                <option value="Itaguai">Itaguaí</option>
+                                <option value="Vitoria">Vitória</option>
+                            </optgroup>
+                            <optgroup label="🇧🇷 Brasil - Nordeste">
+                                <option value="Salvador">Salvador</option>
+                                <option value="Suape">Suape</option>
+                                <option value="Pecem">Pecém</option>
+                                <option value="Fortaleza">Fortaleza</option>
+                            </optgroup>
+                            <optgroup label="🇧🇷 Brasil - Norte">
+                                <option value="Manaus">Manaus</option>
+                                <option value="Belem">Belém</option>
+                            </optgroup>
+                            <optgroup label="🇦🇷🇺🇾 Argentina / Uruguai">
+                                <option value="Buenos Aires">Buenos Aires</option>
+                                <option value="Montevideo">Montevideo</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Serviço</label>
+                        <select id="service">
+                            <option value="">Todos os serviços</option>
+                            <option value="Santana">Santana</option>
+                            <option value="Carioca">Carioca</option>
+                            <option value="Ipanema">Ipanema</option>
+                            <option value="Jade">Jade</option>
+                            <option value="Tiger">Tiger</option>
+                            <option value="Dragon">Dragon</option>
+                            <option value="Lion">Lion</option>
+                            <option value="Phoenix">Phoenix</option>
+                            <option value="Seagull">Seagull</option>
+                            <option value="Seahorse">Seahorse</option>
+                            <option value="Pertiwi">Pertiwi</option>
+                            <option value="Dolphin">Dolphin</option>
+                            <option value="Kaguya">Kaguya</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <button type="submit" class="btn btn-search" id="searchBtn">🔍 Buscar</button>
+                        <button type="button" class="btn btn-export" id="exportBtn" disabled>📥 Excel</button>
+                    </div>
+                </div>
+                
+                <div class="services-row" id="servicesRow">
+                    <label>Rápido:</label>
+                    <span class="service-chip active" data-service="">Todos</span>
+                    <span class="service-chip" data-service="Santana">Santana</span>
+                    <span class="service-chip" data-service="Carioca">Carioca</span>
+                    <span class="service-chip" data-service="Ipanema">Ipanema</span>
+                    <span class="service-chip" data-service="Jade">Jade</span>
+                    <span class="service-chip" data-service="Tiger">Tiger</span>
+                    <span class="service-chip" data-service="Dragon">Dragon</span>
+                    <span class="service-chip" data-service="Lion">Lion</span>
+                    <span class="service-chip" data-service="Phoenix">Phoenix</span>
+                    <span class="service-chip" data-service="Seagull">Seagull</span>
+                    <span class="service-chip" data-service="Seahorse">Seahorse</span>
+                    <span class="service-chip" data-service="Pertiwi">Pertiwi</span>
+                    <span class="service-chip" data-service="Dolphin">Dolphin</span>
+                    <span class="service-chip" data-service="Kaguya">Kaguya</span>
+                    <span class="route-info" id="routeInfo"></span>
+                </div>
+            </form>
+        </div>
+        
+        <div class="results-card">
+            <div class="results-header">
+                <h2>Resultados</h2>
+                <span class="count-badge" id="countBadge">0 schedules</span>
+            </div>
+            
+            <div class="msg msg-error" id="errorMsg"></div>
+            <div class="msg msg-success" id="successMsg"></div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Buscando schedules na MSC...</p>
+                <p class="sub">Aguarde ~15 segundos</p>
+            </div>
+            
+            <div class="empty" id="emptyState">
+                <div class="icon">🚢</div>
+                <p>Selecione origem e destino para buscar</p>
+            </div>
+            
+            <div id="tableWrap" style="display:none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Serviço</th>
+                            <th>Navio</th>
+                            <th>ETD</th>
+                            <th>ETA</th>
+                            <th>Transit</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="screenshots" id="screenshotsDiv" style="display:none;">
+                <h4>📸 Debug Screenshots</h4>
+                <div class="screenshot-links" id="screenshotsList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let results = [];
+        let availableServices = null;
+        
+        // Todos os serviços possíveis
+        const ALL_SERVICES = ['Santana', 'Carioca', 'Ipanema', 'Jade', 'Tiger', 'Dragon', 'Lion', 'Phoenix'];
+        
+        // Event listeners
+        document.getElementById('searchForm').addEventListener('submit', search);
+        document.getElementById('exportBtn').addEventListener('click', exportExcel);
+        
+        // Quando mudar POL ou POD, atualizar serviços disponíveis
+        document.getElementById('pol').addEventListener('change', updateAvailableServices);
+        document.getElementById('pod').addEventListener('change', updateAvailableServices);
+        
+        // Service chips
+        document.querySelectorAll('.service-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                if (chip.classList.contains('disabled')) return;
+                
+                document.querySelectorAll('.service-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                document.getElementById('service').value = chip.dataset.service;
+            });
+        });
+        
+        // Sync select with chips
+        document.getElementById('service').addEventListener('change', (e) => {
+            document.querySelectorAll('.service-chip').forEach(c => {
+                c.classList.toggle('active', c.dataset.service === e.target.value);
+            });
+        });
+        
+        // Função para atualizar serviços disponíveis baseado em POL/POD
+        async function updateAvailableServices() {
+            const pol = document.getElementById('pol').value;
+            const pod = document.getElementById('pod').value;
+            const routeInfo = document.getElementById('routeInfo');
+            const serviceSelect = document.getElementById('service');
+            
+            // Reset se não tiver POL ou POD
+            if (!pol || !pod) {
+                availableServices = null;
+                routeInfo.textContent = '';
+                routeInfo.classList.remove('warning');
+                
+                // Mostrar todos os serviços
+                document.querySelectorAll('.service-chip').forEach(chip => {
+                    chip.classList.remove('disabled', 'hidden');
+                });
+                
+                // Habilitar todas as opções do select
+                Array.from(serviceSelect.options).forEach(opt => {
+                    opt.disabled = false;
+                });
+                
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/api/available-services?pol=${encodeURIComponent(pol)}&pod=${encodeURIComponent(pod)}`);
+                const data = await res.json();
+                
+                if (data.services && data.services.length > 0 && data.services[0] !== 'ALL') {
+                    availableServices = data.services;
+                    routeInfo.textContent = `Serviços: ${data.services.join(', ')}`;
+                    routeInfo.classList.remove('warning');
+                    
+                    // Atualizar chips - esconder os não disponíveis (exceto "Todos")
+                    document.querySelectorAll('.service-chip').forEach(chip => {
+                        const service = chip.dataset.service;
+                        if (service === '') {
+                            // "Todos" sempre visível
+                            chip.classList.remove('disabled', 'hidden');
+                        } else if (availableServices.includes(service)) {
+                            chip.classList.remove('disabled', 'hidden');
+                        } else {
+                            chip.classList.add('hidden');
+                        }
+                    });
+                    
+                    // Atualizar select
+                    Array.from(serviceSelect.options).forEach(opt => {
+                        if (opt.value === '' || availableServices.includes(opt.value)) {
+                            opt.disabled = false;
+                        } else {
+                            opt.disabled = true;
+                        }
+                    });
+                    
+                    // Se o serviço selecionado não está disponível, resetar para "Todos"
+                    const currentService = serviceSelect.value;
+                    if (currentService && !availableServices.includes(currentService)) {
+                        serviceSelect.value = '';
+                        document.querySelectorAll('.service-chip').forEach(c => c.classList.remove('active'));
+                        document.querySelector('.service-chip[data-service=""]').classList.add('active');
+                    }
+                    
+                    // Se só tem um serviço disponível, selecionar automaticamente
+                    if (availableServices.length === 1) {
+                        serviceSelect.value = availableServices[0];
+                        document.querySelectorAll('.service-chip').forEach(c => c.classList.remove('active'));
+                        const chip = document.querySelector(`.service-chip[data-service="${availableServices[0]}"]`);
+                        if (chip) chip.classList.add('active');
+                    }
+                    
+                } else {
+                    // Rota não mapeada - mostrar todos
+                    availableServices = null;
+                    routeInfo.textContent = 'Todas as rotas disponíveis';
+                    routeInfo.classList.add('warning');
+                    
+                    document.querySelectorAll('.service-chip').forEach(chip => {
+                        chip.classList.remove('disabled', 'hidden');
+                    });
+                    
+                    Array.from(serviceSelect.options).forEach(opt => {
+                        opt.disabled = false;
+                    });
+                }
+                
+            } catch (err) {
+                console.error('Erro ao buscar serviços:', err);
+                availableServices = null;
+                routeInfo.textContent = '';
+            }
+        }
+        
+        async function search(e) {
+            e.preventDefault();
+            const pol = document.getElementById('pol').value;
+            const pod = document.getElementById('pod').value;
+            const service = document.getElementById('service').value;
+            
+            if (!pol || !pod) { alert('Selecione origem e destino'); return; }
+            
+            setLoading(true);
+            hideMessages();
+            
+            try {
+                const res = await fetch('/api/schedules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        pol, 
+                        pod, 
+                        carriers: ['MSC'],
+                        service: service || 'ALL'
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.error) { showError(data.error); return; }
+                
+                results = data.data || data.sailings || [];
+                renderTable(results);
+                loadScreenshots();
+                document.getElementById('exportBtn').disabled = results.length === 0;
+                
+                if (results.length > 0) {
+                    showSuccess(`${results.length} schedules encontrados!`);
+                } else {
+                    showError('Nenhum schedule encontrado. Verifique os screenshots abaixo.');
+                }
+            } catch (err) {
+                showError('Erro: ' + err.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        async function exportExcel() {
+            const pol = document.getElementById('pol').value;
+            const pod = document.getElementById('pod').value;
+            
+            try {
+                const res = await fetch('/api/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pol, pod, sailings: results })
+                });
+                
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `MSC_${pol}_${pod}.xlsx`;
+                a.click();
+            } catch (err) {
+                // Se não tiver endpoint de export, baixar o arquivo gerado
+                const filename = `Schedules_${pol}_${pod}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                window.open(`/exports/${filename}`, '_blank');
+            }
+        }
+        
+        async function loadScreenshots() {
+            try {
+                const res = await fetch('/api/screenshots');
+                const files = await res.json();
+                if (files.length > 0) {
+                    document.getElementById('screenshotsDiv').style.display = 'block';
+                    document.getElementById('screenshotsList').innerHTML = files.map(f =>
+                        `<a href="/exports/${f}" target="_blank" class="screenshot-link">${f}</a>`
+                    ).join('');
+                }
+            } catch (e) {
+                // Tentar listar diretamente
+                const screenshots = ['msc-05-resultados.png', 'msc-06-filtro-aberto.png', 'msc-07-filtro-aplicado.png', 'msc-error.png'];
+                document.getElementById('screenshotsDiv').style.display = 'block';
+                document.getElementById('screenshotsList').innerHTML = screenshots.map(f =>
+                    `<a href="/exports/${f}" target="_blank" class="screenshot-link">${f}</a>`
+                ).join('');
+            }
+        }
+        
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            const wrap = document.getElementById('tableWrap');
+            const empty = document.getElementById('emptyState');
+            document.getElementById('countBadge').textContent = `${data.length} schedules`;
+            
+            if (data.length === 0) { wrap.style.display = 'none'; empty.style.display = 'block'; return; }
+            
+            empty.style.display = 'none';
+            wrap.style.display = 'block';
+            
+            tbody.innerHTML = data.map(s => {
+                const serviceName = (s.service || '-').toLowerCase();
+                const serviceClass = `service-${serviceName}`;
+                return `<tr>
+                    <td><span class="service-tag ${serviceClass}">${s.service || '-'}</span></td>
+                    <td><strong>${s.vessel || '-'}</strong></td>
+                    <td>${s.etd || '-'}</td>
+                    <td>${s.eta || '-'}</td>
+                    <td>${s.transit || s.transitTime || '-'}</td>
+                    <td>${s.routeType || '-'}</td>
+                </tr>`;
+            }).join('');
+        }
+        
+        function setLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+            document.getElementById('searchBtn').disabled = show;
+            if (show) {
+                document.getElementById('tableWrap').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'none';
+            }
+        }
+        
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+        
+        function showSuccess(msg) {
+            const el = document.getElementById('successMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+        
+        function hideMessages() {
+            document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
