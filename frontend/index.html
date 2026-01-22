@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALLOG - MSC Schedules</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .header h1 span {
+            color: #ffd700;
+        }
+        .search-box {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .search-box h2 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #ffd700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto auto;
+            gap: 15px;
+            align-items: end;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group label {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.7);
+            font-weight: 500;
+        }
+        .form-group select {
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .form-group select:hover {
+            border-color: #ffd700;
+        }
+        .form-group select:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 0 3px rgba(255,215,0,0.2);
+        }
+        .form-group select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: #ffd700;
+            color: #1a1a2e;
+        }
+        .btn-primary:hover {
+            background: #ffed4a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255,215,0,0.4);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .quick-filters {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .quick-filters span {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.6);
+        }
+        .quick-filter-btn {
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: transparent;
+            color: #fff;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .quick-filter-btn:hover, .quick-filter-btn.active {
+            background: #ffd700;
+            color: #1a1a2e;
+            border-color: #ffd700;
+        }
+        .route-info {
+            margin-left: auto;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.6);
+        }
+        .results-box {
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 30px;
+            color: #1a1a2e;
+            min-height: 400px;
+        }
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .results-header h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .results-count {
+            background: #ffd700;
+            color: #1a1a2e;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .results-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background: #1a1a2e;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .results-table th:first-child {
+            border-radius: 8px 0 0 8px;
+        }
+        .results-table th:last-child {
+            border-radius: 0 8px 8px 0;
+        }
+        .results-table td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            font-size: 0.95rem;
+        }
+        .results-table tr:hover {
+            background: rgba(255,215,0,0.1);
+        }
+        .service-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .service-jade { background: #4ade80; color: #166534; }
+        .service-ipanema { background: #f97316; color: #fff; }
+        .service-santana { background: #fbbf24; color: #78350f; }
+        .service-carioca { background: #f472b6; color: #831843; }
+        .service-default { background: #94a3b8; color: #1e293b; }
+        .vessel-name {
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .date-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .date-main {
+            font-weight: 500;
+        }
+        .transbordo-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .transbordo-port {
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .transbordo-date {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        .route-type {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .route-direct { background: #dcfce7; color: #166534; }
+        .route-transbordo { background: #fef3c7; color: #92400e; }
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            color: #64748b;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: #64748b;
+        }
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        .debug-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+        }
+        .debug-section h4 {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .debug-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .debug-links a {
+            padding: 6px 12px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .debug-links a:hover {
+            background: #f8fafc;
+            border-color: #ffd700;
+            color: #1a1a2e;
+        }
+        @media (max-width: 1024px) {
+            .form-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .results-table {
+                font-size: 0.85rem;
+            }
+            .results-table th, .results-table td {
+                padding: 10px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 <span>Buscar Schedules MSC</span></h1>
+        </div>
+
+        <div class="search-box">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>PORTO DE ORIGEM (POL)</label>
+                    <select id="pol">
+                        <option value="">Selecione...</option>
+                        <option value="Shanghai">Shanghai</option>
+                        <option value="Ningbo">Ningbo</option>
+                        <option value="Qingdao">Qingdao</option>
+                        <option value="Shekou">Shekou</option>
+                        <option value="Yantian">Yantian</option>
+                        <option value="Hong Kong">Hong Kong</option>
+                        <option value="Xiamen">Xiamen</option>
+                        <option value="Nansha">Nansha</option>
+                        <option value="Fuzhou">Fuzhou</option>
+                        <option value="Busan">Busan</option>
+                        <option value="Singapore">Singapore</option>
+                        <option value="Tanjung Pelepas">Tanjung Pelepas</option>
+                        <option value="Port Klang">Port Klang</option>
+                        <option value="Jakarta">Jakarta</option>
+                        <option value="Surabaya">Surabaya</option>
+                        <option value="Laem Chabang">Laem Chabang</option>
+                        <option value="Ho Chi Minh">Ho Chi Minh</option>
+                        <option value="Haiphong">Haiphong</option>
+                        <option value="Kaohsiung">Kaohsiung</option>
+                        <option value="Yokohama">Yokohama</option>
+                        <option value="Tokyo">Tokyo</option>
+                        <option value="Kobe">Kobe</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>PORTO DE DESTINO (POD)</label>
+                    <select id="pod">
+                        <option value="">Selecione...</option>
+                        <option value="Santos">Santos</option>
+                        <option value="Navegantes">Navegantes</option>
+                        <option value="Rio de Janeiro">Rio de Janeiro</option>
+                        <option value="Paranagua">Paranaguá</option>
+                        <option value="Rio Grande">Rio Grande</option>
+                        <option value="Itapoa">Itapoá</option>
+                        <option value="Pecem">Pecém</option>
+                        <option value="Manaus">Manaus</option>
+                        <option value="Itajai">Itajaí</option>
+                        <option value="Suape">Suape</option>
+                        <option value="Salvador">Salvador</option>
+                        <option value="Vitoria">Vitória</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>SERVIÇO</label>
+                    <select id="service">
+                        <option value="ALL">Todos os serviços</option>
+                        <option value="Jade">Jade</option>
+                        <option value="Ipanema">Ipanema</option>
+                        <option value="Santana">Santana</option>
+                        <option value="Carioca">Carioca</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="searchBtn" onclick="buscarSchedules()">
+                    🔍 Buscar
+                </button>
+                <button class="btn btn-secondary" id="excelBtn" onclick="exportarExcel()" disabled>
+                    📊 Excel
+                </button>
+            </div>
+            <div class="quick-filters">
+                <span>RÁPIDO:</span>
+                <button class="quick-filter-btn active" onclick="setService('ALL')">Todos</button>
+                <button class="quick-filter-btn" onclick="setService('Santana')">Santana</button>
+                <button class="quick-filter-btn" onclick="setService('Ipanema')">Ipanema</button>
+                <button class="quick-filter-btn" onclick="setService('Jade')">Jade</button>
+                <div class="route-info" id="routeInfo"></div>
+            </div>
+        </div>
+
+        <div class="results-box">
+            <div class="results-header">
+                <h3>Resultados</h3>
+                <span class="results-count" id="resultsCount">0 schedules</span>
+            </div>
+            <div id="resultsContainer">
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p>Selecione a origem, destino e clique em Buscar</p>
+                </div>
+            </div>
+            <div class="debug-section" id="debugSection" style="display: none;">
+                <h4>📷 Debug Screenshots</h4>
+                <div class="debug-links" id="debugLinks"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentResults = [];
+        let currentPol = '';
+        let currentPod = '';
+
+        function setService(service) {
+            document.getElementById('service').value = service;
+            document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(service.toLowerCase()) || 
+                    (service === 'ALL' && btn.textContent === 'Todos')) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        function formatDateDisplay(dateStr) {
+            if (!dateStr || dateStr === '-') return '-';
+            try {
+                const match = dateStr.match(/(\w{3})?\s*(\d{1,2})(?:st|nd|rd|th)?\s+(\w{3})\s+(\d{4})/);
+                if (!match) return dateStr;
+                const [, weekDay, day, monthName, year] = match;
+                const months = { 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12' };
+                const month = months[monthName];
+                if (!month) return dateStr;
+                const weekDayPart = weekDay ? weekDay + ' ' : '';
+                return `${weekDayPart}${day.padStart(2, '0')}/${month}/${year}`;
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
+        async function buscarSchedules() {
+            const pol = document.getElementById('pol').value;
+            const pod = document.getElementById('pod').value;
+            const service = document.getElementById('service').value;
+
+            if (!pol || !pod) {
+                alert('Selecione origem e destino');
+                return;
+            }
+
+            currentPol = pol;
+            currentPod = pod;
+
+            const searchBtn = document.getElementById('searchBtn');
+            const excelBtn = document.getElementById('excelBtn');
+            searchBtn.disabled = true;
+            searchBtn.innerHTML = '⏳ Buscando...';
+            excelBtn.disabled = true;
+
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Buscando schedules no site da MSC...</p>
+                    <p style="font-size: 0.8rem; margin-top: 10px;">Isso pode levar até 60 segundos</p>
+                </div>
+            `;
+            document.getElementById('debugSection').style.display = 'none';
+
+            try {
+                const response = await fetch('/api/schedules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pol, pod, service, carrier: 'msc' })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                currentResults = data.sailings || [];
+                renderResults(currentResults);
+                
+                // Mostrar info da rota
+                const routeInfo = document.getElementById('routeInfo');
+                if (data.isConnection) {
+                    routeInfo.textContent = 'Rota de conexão - busca todos os serviços';
+                } else if (data.availableServices) {
+                    routeInfo.textContent = `Serviços: ${data.availableServices.join(', ')}`;
+                }
+
+                // Debug screenshots
+                if (data.screenshots && data.screenshots.length > 0) {
+                    document.getElementById('debugSection').style.display = 'block';
+                    document.getElementById('debugLinks').innerHTML = data.screenshots
+                        .map(s => `<a href="/exports/${s}" target="_blank">${s}</a>`)
+                        .join('');
+                }
+
+                excelBtn.disabled = currentResults.length === 0;
+
+            } catch (error) {
+                document.getElementById('resultsContainer').innerHTML = `
+                    <div class="empty-state">
+                        <p style="color: #ef4444;">❌ Erro: ${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.innerHTML = '🔍 Buscar';
+            }
+        }
+
+        function renderResults(results) {
+            const container = document.getElementById('resultsContainer');
+            const countEl = document.getElementById('resultsCount');
+
+            countEl.textContent = `${results.length} schedules`;
+
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>Nenhum schedule encontrado para esta rota</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const getServiceClass = (service) => {
+                if (!service || service === '-') return 'service-default';
+                const s = service.toLowerCase();
+                if (s.includes('jade')) return 'service-jade';
+                if (s.includes('ipanema')) return 'service-ipanema';
+                if (s.includes('santana')) return 'service-santana';
+                if (s.includes('carioca')) return 'service-carioca';
+                return 'service-default';
+            };
+
+            container.innerHTML = `
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>SERVIÇO</th>
+                            <th>NAVIO</th>
+                            <th>ETD</th>
+                            <th>TRANSBORDO</th>
+                            <th>ETA</th>
+                            <th>TRANSIT</th>
+                            <th>TIPO</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${results.map(r => `
+                            <tr>
+                                <td>
+                                    <span class="service-badge ${getServiceClass(r.service)}">
+                                        ${r.service || '-'}
+                                    </span>
+                                </td>
+                                <td class="vessel-name">${r.vessel || '-'}</td>
+                                <td class="date-info">
+                                    <span class="date-main">${formatDateDisplay(r.etd)}</span>
+                                </td>
+                                <td class="transbordo-info">
+                                    <span class="transbordo-port">${r.transbordo || '-'}</span>
+                                    ${r.transbordoDate ? `<span class="transbordo-date">${formatDateDisplay(r.transbordoDate)}</span>` : ''}
+                                </td>
+                                <td class="date-info">
+                                    <span class="date-main">${formatDateDisplay(r.eta)}</span>
+                                </td>
+                                <td>${r.transit || '-'}</td>
+                                <td>
+                                    <span class="route-type ${r.routeType === 'Direct' ? 'route-direct' : 'route-transbordo'}">
+                                        ${r.routeType || '-'}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function exportarExcel() {
+            if (currentResults.length === 0) {
+                alert('Nenhum resultado para exportar');
+                return;
+            }
+
+            const excelBtn = document.getElementById('excelBtn');
+            excelBtn.disabled = true;
+            excelBtn.innerHTML = '⏳ Gerando...';
+
+            try {
+                const response = await fetch('/api/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pol: currentPol,
+                        pod: currentPod,
+                        sailings: currentResults
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao gerar Excel');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `MSC_${currentPol}_${currentPod}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+
+            } catch (error) {
+                alert('Erro ao exportar: ' + error.message);
+            } finally {
+                excelBtn.disabled = false;
+                excelBtn.innerHTML = '📊 Excel';
+            }
+        }
+    </script>
+</body>
+</html>
